@@ -62,37 +62,112 @@
         <strong>3.2 反向传播算法详解</strong>
         <span class="sep">·</span>
         <span>共 5 节</span>
+        <div class="view-toggle">
+          <button class="view-btn active" id="btnVideo" onclick="switchView('video')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            视频
+          </button>
+          <button class="view-btn" id="btnTranscript" onclick="switchView('transcript')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/>
+              <line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/>
+            </svg>
+            逐字稿
+          </button>
+        </div>
       </div>
 
-      <!-- 视频区 -->
-      <div class="video-area">
-        <div class="video-placeholder">
-          <div class="play-ring">
-            <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-          </div>
-          <div class="video-meta">
-            <strong>3.2 反向传播算法详解</strong>
-            讲师：张教授 &nbsp;·&nbsp; 时长 45:00
-          </div>
-        </div>
+      <!-- 内容区：画中画切换 -->
+      <div class="content-area">
 
-        <div class="progress-area">
-          <div class="time-row">
-            <span>15:18</span>
-            <span>45:00</span>
+        <!-- ① 视频主视图 -->
+        <div class="video-main" id="videoMain">
+          <div class="video-placeholder">
+            <div class="play-ring">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+            </div>
+            <div class="video-meta">
+              <strong>3.2 反向传播算法详解</strong>
+              讲师：张教授 &nbsp;·&nbsp; 时长 45:00
+            </div>
           </div>
-          <div class="track">
-            <div class="track-fill"></div>
-            <div class="markers">
-              <div class="marker" style="left:8%"></div>
-              <div class="marker" style="left:22%"></div>
-              <div class="marker" style="left:34%"></div>
-              <div class="marker" style="left:51%"></div>
-              <div class="marker" style="left:67%"></div>
-              <div class="marker" style="left:81%"></div>
+
+          <!-- PiP：逐字稿小窗 -->
+          <div class="pip-window" id="pipTranscript">
+            <div class="pip-drag"></div>
+            <div class="pip-header">
+              <span>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/>
+                  <line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/>
+                </svg>
+                逐字稿
+              </span>
+              <button class="pip-switch-btn" onclick="switchView('transcript')">切换主视图</button>
+            </div>
+            <div class="pip-transcript-body">
+              <p>…w = w − α · ∂L/∂w，其中 α 是学习率，控制每次更新的步长大小。学习率的选择对训练效果至关重要…</p>
+            </div>
+          </div>
+
+          <div class="progress-area">
+            <div class="time-row">
+              <span id="currentTime">15:18</span>
+              <span>45:00</span>
+            </div>
+            <div class="track" id="progressTrack">
+              <div class="track-fill" id="trackFill"></div>
+              <div class="markers">
+                <div class="marker" style="left:8%"></div>
+                <div class="marker" style="left:22%"></div>
+                <div class="marker" style="left:34%"></div>
+                <div class="marker" style="left:51%"></div>
+                <div class="marker" style="left:67%"></div>
+                <div class="marker" style="left:81%"></div>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- ② 逐字稿主视图 -->
+        <div class="transcript-main" id="transcriptMain">
+          <div class="transcript-header">
+            <div class="transcript-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/>
+                <line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/>
+              </svg>
+              AI 逐字稿
+              <span class="ai-badge">✦ AI 提取</span>
+            </div>
+            <span class="transcript-stats">共 1,247 字 · 19 段</span>
+          </div>
+          <div class="transcript-body" id="transcriptBody"></div>
+
+          <!-- PiP：视频小窗 -->
+          <div class="pip-window pip-video-win" id="pipVideo">
+            <div class="pip-drag"></div>
+            <div class="pip-header">
+              <span>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="rgba(79,142,247,.8)">
+                  <polygon points="5,3 19,12 5,21"/>
+                </svg>
+                视频
+              </span>
+              <button class="pip-switch-btn" onclick="switchView('video')">切换主视图</button>
+            </div>
+            <div class="pip-video-body">
+              <svg viewBox="0 0 24 24" fill="rgba(79,142,247,.45)">
+                <polygon points="5,3 19,12 5,21"/>
+              </svg>
+              <div class="pip-time">15:18 / 45:00</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- 控制栏 -->
@@ -178,7 +253,7 @@
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-              15:18
+              <span id="sendBarTime">15:18</span>
             </span>
             <span>节点</span>
           </div>
@@ -189,6 +264,11 @@
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
               发送
+            </button>
+            <button class="like-send-btn" id="sendLikeBtn" onclick="toggleLike(this)" title="点赞">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
             </button>
           </div>
         </div>

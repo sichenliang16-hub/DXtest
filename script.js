@@ -60,3 +60,146 @@ function setRole(btn, role) {
 
 // ── 初始化 ──
 renderComments();
+
+// ══════════════════════════════════════
+//  时间轴工具函数
+// ══════════════════════════════════════
+
+const TOTAL_SEC = 2700; // 45:00
+
+function timeToSec(t) {
+  const [m, s] = t.split(':').map(Number);
+  return m * 60 + s;
+}
+
+function secToTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+// 跳转到指定秒数，联动进度条 + 弹幕 + 逐字稿高亮
+function seekTo(sec) {
+  sec = Math.max(0, Math.min(TOTAL_SEC, sec));
+  const timeStr = secToTime(sec);
+  const pct     = (sec / TOTAL_SEC * 100).toFixed(2) + '%';
+
+  // 进度条
+  const fill = document.getElementById('trackFill');
+  if (fill) fill.style.width = pct;
+
+  // 时间显示
+  const curTimeEl = document.getElementById('currentTime');
+  if (curTimeEl) curTimeEl.textContent = timeStr;
+
+  // 发送栏时间
+  const sendBarTime = document.getElementById('sendBarTime');
+  if (sendBarTime) sendBarTime.textContent = timeStr;
+
+  // 最近弹幕高亮
+  let bestIdx = 0, bestDiff = Infinity;
+  comments.forEach((c, i) => {
+    const d = Math.abs(timeToSec(c.time) - sec);
+    if (d < bestDiff) { bestDiff = d; bestIdx = i; }
+  });
+  comments.forEach((c, i) => c.active = (i === bestIdx));
+  renderComments();
+
+  // 逐字稿段落高亮（若已渲染）
+  updateTranscriptHighlight(sec);
+}
+
+// 单独更新逐字稿高亮，不重新渲染整个列表
+function updateTranscriptHighlight(sec) {
+  const paras = document.querySelectorAll('.transcript-para');
+  if (!paras.length) return;
+  let bestIdx = 0, bestDiff = Infinity;
+  transcript.forEach((p, i) => {
+    const d = Math.abs(timeToSec(p.time) - sec);
+    if (d < bestDiff) { bestDiff = d; bestIdx = i; }
+  });
+  paras.forEach((el, i) => el.classList.toggle('current', i === bestIdx));
+  transcript.forEach((p, i) => p.current = (i === bestIdx));
+}
+
+// ══════════════════════════════════════
+//  画中画 / 逐字稿
+// ══════════════════════════════════════
+
+// ── AI 逐字稿模拟数据 ──
+const transcript = [
+  { time: '00:00', text: '同学们好，今天我们来学习反向传播算法，这是深度学习中最核心的算法之一。' },
+  { time: '01:20', text: '首先让我们回顾前向传播的过程。给定输入 x，经过各层神经元的计算，得到最终输出 ŷ。' },
+  { time: '03:10', text: '这里的关键是链式法则。当我们有复合函数时，导数可以通过链式相乘来计算，这是整个反向传播的数学基础。' },
+  { time: '05:45', text: '损失函数 L 衡量了预测与真实值之间的差距。常用的有均方误差（MSE）和交叉熵损失函数。' },
+  { time: '07:30', text: '反向传播第一步：计算输出层梯度。对损失函数关于输出层参数求偏导数，得到梯度信号。' },
+  { time: '09:15', text: '得到输出层梯度后，利用链式法则将梯度反向传播到隐藏层。每一层的梯度都依赖后面一层的梯度。' },
+  { time: '11:00', text: '这就是"反向"传播名称的由来——梯度从输出层向输入层方向流动，与前向传播方向相反。' },
+  { time: '13:22', text: '激活函数的选择对梯度传播有重要影响。ReLU 在正值区间梯度为 1，能有效缓解梯度消失问题。' },
+  { time: '15:10', text: '现在来到权重更新环节。得到每个参数的梯度后，按照梯度下降方向更新权重参数。', current: true },
+  { time: '15:18', text: 'w = w − α · ∂L/∂w，其中 α 是学习率，控制每次更新的步长大小。学习率的选择对训练效果至关重要。', current: true },
+  { time: '17:05', text: '学习率太大会导致训练不稳定甚至发散；学习率太小则收敛缓慢，训练效率低下。' },
+  { time: '19:30', text: '为了解决学习率选择的难题，研究者提出了自适应优化算法，如 Adam、RMSprop、AdaGrad 等。' },
+  { time: '22:15', text: '梯度消失是深层网络训练的一大挑战。梯度经过多层反向传播后，会呈指数级衰减，导致浅层参数几乎不更新。' },
+  { time: '25:40', text: '针对梯度消失，除 ReLU 外，还可使用残差连接（ResNet）、批归一化（BatchNorm）等技术。' },
+  { time: '28:00', text: '我们通过一个具体例子来理解整个流程。假设有两层网络，输入维度为 3，隐藏层维度为 4，输出为 2。' },
+  { time: '32:10', text: '计算完所有层的梯度后，执行一次参数更新，完成一个训练步骤，通常称为一个 iteration（迭代）。' },
+  { time: '36:45', text: '实际训练中通常使用小批量梯度下降（Mini-batch SGD），每次取一小批样本计算梯度，平衡效率与稳定性。' },
+  { time: '40:20', text: '总结反向传播的三个阶段：前向传播计算输出、计算损失梯度、反向传播更新参数。' },
+  { time: '43:00', text: '三个阶段不断循环迭代，使网络逐渐学习到数据中的规律。这就是深度学习训练的本质。' },
+];
+
+function renderTranscript() {
+  const body = document.getElementById('transcriptBody');
+  if (!body) return;
+  body.innerHTML = transcript.map(p => {
+    const sec = timeToSec(p.time);
+    return `
+    <div class="transcript-para ${p.current ? 'current' : ''}">
+      <div class="t-time" onclick="seekTo(${sec})" title="跳转至 ${p.time}">${p.time}</div>
+      <div class="t-text">${p.text}</div>
+    </div>`;
+  }).join('');
+  const cur = body.querySelector('.current');
+  if (cur) setTimeout(() => cur.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80);
+}
+
+// ── 视图切换：视频 ↔ 逐字稿 ──
+function switchView(mode) {
+  const videoMain      = document.getElementById('videoMain');
+  const transcriptMain = document.getElementById('transcriptMain');
+  const btnVideo       = document.getElementById('btnVideo');
+  const btnTranscript  = document.getElementById('btnTranscript');
+
+  if (mode === 'video') {
+    videoMain.style.display      = 'flex';
+    transcriptMain.style.display = 'none';
+    btnVideo.classList.add('active');
+    btnTranscript.classList.remove('active');
+  } else {
+    videoMain.style.display      = 'none';
+    transcriptMain.style.display = 'flex';
+    btnTranscript.classList.add('active');
+    btnVideo.classList.remove('active');
+    renderTranscript();
+  }
+}
+
+// ── 点赞按钮 ──
+function toggleLike(btn) {
+  btn.classList.toggle('liked');
+}
+
+// 预渲染逐字稿
+renderTranscript();
+
+// ── 进度条点击 → 联动弹幕 ──
+document.addEventListener('DOMContentLoaded', () => {
+  const track = document.getElementById('progressTrack');
+  if (!track) return;
+  track.addEventListener('click', e => {
+    const rect = track.getBoundingClientRect();
+    const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    seekTo(Math.round(pct * TOTAL_SEC));
+  });
+});
